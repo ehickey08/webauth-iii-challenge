@@ -1,4 +1,6 @@
+const jwt = require('jsonwebtoken')
 const Users = require('./users/usersModel');
+const secrets = require('./config/secrets')
 
 module.exports = {
     restricted,
@@ -7,8 +9,20 @@ module.exports = {
 };
 
 function restricted(req, res, next) {
-    if (req.session && req.session.username) next();
-    else next({ stat: 401, message: 'Invalid credentials.' });
+    const token = req.headers.authorization;
+
+    if(token) {
+        jwt.verify(token, secrets.jwtSecret, (err, decodedToken) => {
+            if(err){
+                res.status(401).json('Invalid credentials.');
+            } else{
+                req.jwtToken = decodedToken;
+                next();
+            }
+        });
+    } else{
+        res.status(400).json({You:'are not logged in!' });
+    }
 }
 
 async function checkUserAtReg(req, res, next) {
